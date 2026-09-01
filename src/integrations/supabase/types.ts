@@ -14,16 +14,262 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      products: {
+        Row: {
+          category: string | null
+          cost_price: number
+          created_at: string
+          id: string
+          image_url: string | null
+          selling_price: number
+          shop_id: string
+          sku: string | null
+          stock_quantity: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          cost_price?: number
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          selling_price?: number
+          shop_id: string
+          sku?: string | null
+          stock_quantity?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          cost_price?: number
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          selling_price?: number
+          shop_id?: string
+          sku?: string | null
+          stock_quantity?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          shop_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          shop_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          shop_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_items: {
+        Row: {
+          id: string
+          line_total: number
+          product_id: string | null
+          quantity: number
+          sale_id: string
+          shop_id: string
+          title: string
+          unit_price: number
+        }
+        Insert: {
+          id?: string
+          line_total?: number
+          product_id?: string | null
+          quantity?: number
+          sale_id: string
+          shop_id: string
+          title: string
+          unit_price?: number
+        }
+        Update: {
+          id?: string
+          line_total?: number
+          product_id?: string | null
+          quantity?: number
+          sale_id?: string
+          shop_id?: string
+          title?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          cash_received: number
+          cashier_id: string | null
+          change_due: number
+          created_at: string
+          discount: number
+          id: string
+          receipt_no: number
+          shop_id: string
+          subtotal: number
+          tax: number
+          total: number
+        }
+        Insert: {
+          cash_received?: number
+          cashier_id?: string | null
+          change_due?: number
+          created_at?: string
+          discount?: number
+          id?: string
+          receipt_no?: number
+          shop_id: string
+          subtotal?: number
+          tax?: number
+          total?: number
+        }
+        Update: {
+          cash_received?: number
+          cashier_id?: string | null
+          change_due?: number
+          created_at?: string
+          discount?: number
+          id?: string
+          receipt_no?: number
+          shop_id?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string | null
+          phone: string | null
+          status: Database["public"]["Enums"]["shop_status"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["shop_status"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["shop_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_shop_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      shop_active: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "owner" | "cashier"
+      shop_status: "active" | "held"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +396,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "owner", "cashier"],
+      shop_status: ["active", "held"],
+    },
   },
 } as const
