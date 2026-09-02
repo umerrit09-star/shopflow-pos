@@ -69,7 +69,10 @@ function SettingsPage() {
 
   async function save() {
     if (!me?.shopId) return;
-    if (!name.trim()) return toast.error("Shop name is required");
+    if (!name.trim()) {
+      toast.error("Shop name is required");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("shops")
