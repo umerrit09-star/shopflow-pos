@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (isLoading || !me || bootstrapped.current) return;
     if (me.roles.length > 0) return;
     bootstrapped.current = true;
-    bootstrapAccount({ data: {} })
+    bootstrapAccount()
       .then(() => {
         queryClient.invalidateQueries();
         void refetch();

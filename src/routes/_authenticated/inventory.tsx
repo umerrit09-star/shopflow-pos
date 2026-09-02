@@ -102,7 +102,10 @@ function InventoryPage() {
 
   async function save() {
     if (!draft || !me?.shopId) return;
-    if (!draft.title.trim()) return toast.error("Title is required");
+    if (!draft.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
     setSaving(true);
     const payload = {
       shop_id: me.shopId,
@@ -118,7 +121,10 @@ function InventoryPage() {
       ? await supabase.from("products").update(payload).eq("id", draft.id)
       : await supabase.from("products").insert(payload);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setDraft(null);
     void queryClient.invalidateQueries({ queryKey: ["products"] });
     toast.success("Product saved");
@@ -126,7 +132,10 @@ function InventoryPage() {
 
   async function remove(product: Product) {
     const { error } = await supabase.from("products").delete().eq("id", product.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     void queryClient.invalidateQueries({ queryKey: ["products"] });
     toast.success("Product deleted");
   }
