@@ -304,7 +304,7 @@ function PosPage() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <div>
+      <div className="pb-40 lg:pb-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <div className="relative min-w-0">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
