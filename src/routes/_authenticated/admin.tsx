@@ -235,16 +235,20 @@ function AdminPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="email">Owner email</Label>
+                <Label htmlFor="username">Shop username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  id="username"
+                  autoCapitalize="none"
+                  placeholder="e.g. gulberg-mart"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  The shop signs in with this username — no email needed.
+                </p>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="password">Temporary password</Label>
+                <Label htmlFor="password">Shop password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -252,6 +256,7 @@ function AdminPage() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                 />
               </div>
+
             </div>
             <DialogFooter>
               <Button disabled={creating} onClick={createShop}>
