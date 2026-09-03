@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { normalizeUsername, usernameToEmail } from "@/lib/username";
 
 /**
  * Provisions the signed-in user: the very first account becomes the platform
@@ -57,7 +58,7 @@ export const bootstrapAccount = createServerFn({ method: "POST" })
 
 const CreateShopInput = z.object({
   shopName: z.string().min(1),
-  email: z.string().email(),
+  username: z.string().min(3),
   password: z.string().min(6),
   ownerName: z.string().optional(),
 });
@@ -81,13 +82,19 @@ export const createShopAccount = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const admin = await assertSuperAdmin(context.supabase, context.userId);
 
+    const username = normalizeUsername(data.username);
+    if (username.length < 3) throw new Error("Username must be at least 3 characters (letters, numbers, . _ -)");
+
     const { data: created, error: userError } = await admin.auth.admin.createUser({
-      email: data.email,
+      email: usernameToEmail(username),
       password: data.password,
       email_confirm: true,
-      user_metadata: { shop_name: data.shopName, full_name: data.ownerName ?? data.shopName },
+      user_metadata: { shop_name: data.shopName, full_name: data.ownerName ?? data.shopName, username },
     });
-    if (userError || !created.user) throw new Error(userError?.message ?? "Could not create login");
+    if (userError || !created.user) {
+      const message = userError?.message ?? "Could not create login";
+      throw new Error(/already/i.test(message) ? "That username is already taken" : message);
+    }
 
     const { data: shop, error: shopError } = await admin
       .from("shops")
