@@ -101,7 +101,7 @@ function AdminPage() {
   const [pendingDelete, setPendingDelete] = useState<ShopRow | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ shopName: "", ownerName: "", email: "", password: "" });
+  const [form, setForm] = useState({ shopName: "", ownerName: "", username: "", password: "" });
 
   const perShop = useMemo(() => {
     const map = new Map<string, { revenue: number; orders: number }>();
@@ -159,8 +159,8 @@ function AdminPage() {
   }
 
   async function createShop() {
-    if (!form.shopName.trim() || !form.email.trim() || form.password.length < 6) {
-      toast.error("Shop name, email and a 6+ character password are required");
+    if (!form.shopName.trim() || form.username.trim().length < 3 || form.password.length < 6) {
+      toast.error("Shop name, a 3+ character username and a 6+ character password are required");
       return;
     }
     setCreating(true);
@@ -168,14 +168,14 @@ function AdminPage() {
       await createShopAccount({
         data: {
           shopName: form.shopName.trim(),
-          email: form.email.trim(),
+          username: form.username.trim(),
           password: form.password,
           ownerName: form.ownerName.trim() || undefined,
         },
       });
       await queryClient.invalidateQueries();
       toast.success("Shop account created");
-      setForm({ shopName: "", ownerName: "", email: "", password: "" });
+      setForm({ shopName: "", ownerName: "", username: "", password: "" });
       setCreateOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create the shop");
@@ -235,16 +235,20 @@ function AdminPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="email">Owner email</Label>
+                <Label htmlFor="username">Shop username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  id="username"
+                  autoCapitalize="none"
+                  placeholder="e.g. gulberg-mart"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  The shop signs in with this username — no email needed.
+                </p>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="password">Temporary password</Label>
+                <Label htmlFor="password">Shop password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -252,6 +256,7 @@ function AdminPage() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                 />
               </div>
+
             </div>
             <DialogFooter>
               <Button disabled={creating} onClick={createShop}>

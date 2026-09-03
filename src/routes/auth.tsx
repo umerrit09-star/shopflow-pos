@@ -3,18 +3,18 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { loginIdentifierToEmail } from "@/lib/username";
 import logoAsset from "@/assets/cloudcart-logo.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
       { title: "Sign in — CloudCart POS" },
-      { name: "description", content: "Sign in to your CloudCart shop or register a new store account." },
+      { name: "description", content: "Sign in to your CloudCart shop with the username and password assigned by your administrator." },
       { property: "og:title", content: "Sign in — CloudCart POS" },
       { property: "og:description", content: "Access your CloudCart POS terminal, inventory and analytics." },
       { property: "og:type", content: "website" },
@@ -26,11 +26,9 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [shopName, setShopName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -41,33 +39,13 @@ function AuthPage() {
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    void navigate({ to: "/pos", replace: true });
-  }
-
-  async function signUp(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
+    const { error } = await supabase.auth.signInWithPassword({
+      email: loginIdentifierToEmail(username),
       password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { shop_name: shopName },
-      },
     });
     setBusy(false);
     if (error) {
-      toast.error(error.message);
-      return;
-    }
-    if (!data.session) {
-      setSent(true);
+      toast.error("Invalid username or password");
       return;
     }
     void navigate({ to: "/pos", replace: true });
@@ -90,84 +68,50 @@ function AuthPage() {
       <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-6 shadow-lift">
         <img src={logoAsset.url} alt="CloudCart" className="mx-auto h-14 w-auto object-contain" />
 
-        {sent ? (
-          <div className="mt-6 text-center">
-            <h1 className="text-lg font-bold">Check your email</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              We sent a confirmation link to {email}. Confirm it, then sign in to open your shop.
-            </p>
-            <Button className="mt-5 w-full" variant="outline" onClick={() => setSent(false)}>
-              Back to sign in
-            </Button>
+        <div className="mt-5 text-center">
+          <h1 className="font-display text-lg font-bold">Shop sign in</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Use the username and password assigned by your administrator.
+          </p>
+        </div>
+
+        <form className="mt-5 space-y-3" onSubmit={signIn}>
+          <div className="space-y-1.5">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              autoCapitalize="none"
+              autoComplete="username"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
           </div>
-        ) : (
-          <Tabs defaultValue="signin" className="mt-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign in</TabsTrigger>
-              <TabsTrigger value="signup">New shop</TabsTrigger>
-            </TabsList>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <Button className="w-full" type="submit" disabled={busy}>
+            {busy ? "Signing in…" : "Sign in"}
+          </Button>
+        </form>
 
-            <TabsContent value="signin">
-              <form className="space-y-3" onSubmit={signIn}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button className="w-full" type="submit" disabled={busy}>
-                  {busy ? "Signing in…" : "Sign in"}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form className="space-y-3" onSubmit={signUp}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="shop">Shop name</Label>
-                  <Input id="shop" required value={shopName} onChange={(e) => setShopName(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="email2">Email</Label>
-                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="password2">Password</Label>
-                  <Input
-                    id="password2"
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button className="w-full" type="submit" disabled={busy}>
-                  {busy ? "Creating…" : "Create shop account"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        )}
-
-        {!sent && (
-          <>
-            <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-            </div>
-            <Button variant="outline" className="w-full" onClick={google}>
-              Continue with Google
-            </Button>
-          </>
-        )}
+        <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" /> admin <span className="h-px flex-1 bg-border" />
+        </div>
+        <Button variant="outline" className="w-full" onClick={google}>
+          Continue with Google
+        </Button>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          Need a shop account? Contact your CloudCart administrator.
+        </p>
       </div>
     </div>
   );
