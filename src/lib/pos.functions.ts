@@ -200,3 +200,137 @@ export const recognizeProduct = createServerFn({ method: "POST" })
       reason: match ? null : "No confident match in your inventory",
     };
   });
+
+/* ------------------------------ Cashier management ----------------------- */
+
+/** Confirms the caller owns a shop and returns the admin client + shop id. */
+async function assertShopOwner(context: { supabase: any; userId: string }) {
+  const { data: roles } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId);
+  const isOwner = (roles ?? []).some((r: { role: string }) => r.role === "owner");
+  if (!isOwner) throw new Error("Forbidden");
+
+  const { data: profile } = await context.supabase
+    .from("profiles")
+    .select("shop_id")
+    .eq("id", context.userId)
+    .maybeSingle();
+  if (!profile?.shop_id) throw new Error("No shop linked to this account");
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return { admin: supabaseAdmin, shopId: profile.shop_id as string };
+}
+
+const CashierInput = z.object({
+  fullName: z.string().min(1),
+  username: z.string().min(3),
+  password: z.string().min(6),
+});
+
+/** Owner: create a cashier login scoped to the owner's own shop. */
+export const createCashierAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => CashierInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin, shopId } = await assertShopOwner(context);
+
+    const username = normalizeUsername(data.username);
+    if (username.length < 3) throw new Error("Username must be at least 3 characters (letters, numbers, . _ -)");
+
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email: usernameToEmail(username),
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.fullName, username },
+    });
+    if (error || !created.user) {
+      const message = error?.message ?? "Could not create cashier login";
+      throw new Error(/already/i.test(message) ? "That username is already taken" : message);
+    }
+
+    await admin
+      .from("profiles")
+      .upsert({ id: created.user.id, shop_id: shopId, full_name: data.fullName, username, active: true });
+    await admin
+      .from("user_roles")
+      .upsert({ user_id: created.user.id, role: "cashier" }, { onConflict: "user_id,role" });
+
+    return { cashierId: created.user.id };
+  });
+
+/** Owner: activate or deactivate one of their own cashiers. */
+export const setCashierActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ cashierId: z.string().uuid(), active: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { admin, shopId } = await assertShopOwner(context);
+    if (data.cashierId === context.userId) throw new Error("You cannot deactivate your own account");
+
+    const { data: target } = await admin
+      .from("profiles")
+      .select("id, shop_id")
+      .eq("id", data.cashierId)
+      .maybeSingle();
+    if (!target || target.shop_id !== shopId) throw new Error("Cashier not found in your shop");
+
+    await admin.from("profiles").update({ active: data.active }).eq("id", data.cashierId);
+    await admin.auth.admin.updateUserById(data.cashierId, {
+      ban_duration: data.active ? "none" : "876000h",
+    });
+    return { ok: true };
+  });
+
+/** Owner: reset a cashier's password (and optionally rename the login). */
+export const updateCashierCredentials = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        cashierId: z.string().uuid(),
+        password: z.string().min(6).optional(),
+        fullName: z.string().min(1).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { admin, shopId } = await assertShopOwner(context);
+
+    const { data: target } = await admin
+      .from("profiles")
+      .select("id, shop_id")
+      .eq("id", data.cashierId)
+      .maybeSingle();
+    if (!target || target.shop_id !== shopId) throw new Error("Cashier not found in your shop");
+
+    if (data.password) {
+      const { error } = await admin.auth.admin.updateUserById(data.cashierId, { password: data.password });
+      if (error) throw new Error(error.message);
+    }
+    if (data.fullName) {
+      await admin.from("profiles").update({ full_name: data.fullName }).eq("id", data.cashierId);
+    }
+    return { ok: true };
+  });
+
+/** Owner: permanently remove one of their own cashiers. */
+export const deleteCashierAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ cashierId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin, shopId } = await assertShopOwner(context);
+    if (data.cashierId === context.userId) throw new Error("You cannot delete your own account");
+
+    const { data: target } = await admin
+      .from("profiles")
+      .select("id, shop_id")
+      .eq("id", data.cashierId)
+      .maybeSingle();
+    if (!target || target.shop_id !== shopId) throw new Error("Cashier not found in your shop");
+
+    await admin.auth.admin.deleteUser(data.cashierId);
+    return { ok: true };
+  });
