@@ -9,6 +9,7 @@ export type Me = {
   email: string | null;
   fullName: string | null;
   shopId: string | null;
+  active: boolean;
   roles: AppRole[];
   shop: {
     id: string;
@@ -29,7 +30,7 @@ export function useMe() {
       if (!user) return null;
 
       const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("shop_id, full_name").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("shop_id, full_name, active").eq("id", user.id).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", user.id),
       ]);
 
@@ -48,6 +49,7 @@ export function useMe() {
         email: user.email ?? null,
         fullName: profile?.full_name ?? null,
         shopId: profile?.shop_id ?? null,
+        active: profile?.active ?? true,
         roles: (roles ?? []).map((r) => r.role as AppRole),
         shop,
       };
