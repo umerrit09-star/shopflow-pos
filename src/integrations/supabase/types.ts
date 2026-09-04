@@ -66,22 +66,28 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active: boolean
           created_at: string
           full_name: string | null
           id: string
           shop_id: string | null
+          username: string | null
         }
         Insert: {
+          active?: boolean
           created_at?: string
           full_name?: string | null
           id: string
           shop_id?: string | null
+          username?: string | null
         }
         Update: {
+          active?: boolean
           created_at?: string
           full_name?: string | null
           id?: string
           shop_id?: string | null
+          username?: string | null
         }
         Relationships: [
           {
