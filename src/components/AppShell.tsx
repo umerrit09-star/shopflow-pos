@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Boxes, LogOut, Settings, ShieldCheck, ScanLine } from "lucide-react";
+import { BarChart3, Boxes, LogOut, Settings, ShieldCheck, ScanLine, Users } from "lucide-react";
 import { useMe, useSignedUrl, useSignOut } from "@/lib/session";
 import { bootstrapAccount } from "@/lib/pos.functions";
 import logoAsset from "@/assets/cloudcart-logo.jpg.asset.json";
@@ -12,8 +12,12 @@ const tabs = [
   { to: "/pos", label: "POS", icon: ScanLine },
   { to: "/inventory", label: "Inventory", icon: Boxes },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/cashiers", label: "Cashiers", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
+
+/** Sections a cashier may never open — selling only. */
+const ownerOnlyPaths = ["/inventory", "/analytics", "/cashiers", "/settings", "/admin"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { data: me, isLoading, refetch } = useMe();
@@ -38,7 +42,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [isLoading, me, queryClient, refetch]);
 
   const isSuperAdmin = me?.roles.includes("super_admin") ?? false;
-  const navItems = isSuperAdmin ? [{ to: "/admin", label: "Shops", icon: ShieldCheck }, ...tabs] : tabs;
+  const isCashier = !isSuperAdmin && !(me?.roles.includes("owner") ?? false) && (me?.roles.includes("cashier") ?? false);
+  const navItems = isSuperAdmin
+    ? [{ to: "/admin", label: "Shops", icon: ShieldCheck }, ...tabs]
+    : isCashier
+      ? tabs.filter((tab) => !ownerOnlyPaths.includes(tab.to))
+      : tabs;
+  const blockedForCashier = isCashier && ownerOnlyPaths.includes(pathname);
 
   if (isLoading) {
     return (
@@ -52,6 +62,20 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6 text-center text-sm text-muted-foreground">
         Setting up your shop workspace…
+      </div>
+    );
+  }
+
+  if (me && !me.active) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="text-2xl font-bold">Account deactivated</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Your till login has been switched off. Ask the shop owner to activate it again.
+        </p>
+        <Button variant="outline" onClick={signOut}>
+          Sign out
+        </Button>
       </div>
     );
   }
@@ -114,10 +138,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-5">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-5">
+        {blockedForCashier ? (
+          <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-6 text-center">
+            <h1 className="font-display text-lg font-bold">Not available for cashiers</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              This section is for the shop owner. Head back to the till to keep selling.
+            </p>
+            <Button className="mt-4" asChild>
+              <Link to="/pos">Go to POS</Link>
+            </Button>
+          </div>
+        ) : (
+          children
+        )}
+      </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur sm:hidden">
-        <div className="grid grid-cols-5 gap-0.5 px-1 py-1.5">
+        <div className="grid auto-cols-fr grid-flow-col gap-0.5 px-1 py-1.5">
           {navItems.map((tab) => {
             const Icon = tab.icon;
             const active = pathname === tab.to;
