@@ -274,7 +274,7 @@ export type Database = {
       shop_active: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "owner" | "cashier"
+      app_role: "super_admin" | "owner" | "cashier" | "admin"
       shop_status: "active" | "held"
     }
     CompositeTypes: {
@@ -403,7 +403,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "owner", "cashier"],
+      app_role: ["super_admin", "owner", "cashier", "admin"],
       shop_status: ["active", "held"],
     },
   },
