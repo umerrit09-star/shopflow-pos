@@ -334,3 +334,150 @@ export const deleteCashierAccount = createServerFn({ method: "POST" })
     await admin.auth.admin.deleteUser(data.cashierId);
     return { ok: true };
   });
+
+/* ------------------------------ Admin management ------------------------- */
+
+/** Confirms the caller is the platform super admin and returns the admin client. */
+async function assertSuperAdminRole(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("role", "super_admin")
+    .maybeSingle();
+  if (!data) throw new Error("Forbidden");
+  return supabaseAdmin;
+}
+
+/** Super admin: list every platform administrator login. */
+export const listAdminAccounts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertSuperAdminRole(context.userId);
+    const { data: roleRows, error } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+    if (error) throw error;
+    const ids = (roleRows ?? []).map((r) => r.user_id);
+    if (!ids.length) return [];
+    const { data: profiles } = await admin
+      .from("profiles")
+      .select("id, full_name, username, active, created_at")
+      .in("id", ids)
+      .order("created_at", { ascending: false });
+    return (profiles ?? []).map((p) => ({
+      id: p.id,
+      fullName: p.full_name,
+      username: p.username,
+      active: p.active,
+      createdAt: p.created_at,
+    }));
+  });
+
+/** Super admin: create a new administrator login (username + password only). */
+export const createAdminAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        fullName: z.string().min(1),
+        username: z.string().min(3),
+        password: z.string().min(6),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const admin = await assertSuperAdminRole(context.userId);
+    const username = normalizeUsername(data.username);
+    if (username.length < 3) throw new Error("Username must be at least 3 characters (letters, numbers, . _ -)");
+
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email: usernameToEmail(username),
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.fullName, username },
+    });
+    if (error || !created.user) {
+      const message = error?.message ?? "Could not create administrator login";
+      throw new Error(/already/i.test(message) ? "That username is already taken" : message);
+    }
+
+    await admin
+      .from("profiles")
+      .upsert({ id: created.user.id, full_name: data.fullName, username, active: true, shop_id: null });
+    await admin
+      .from("user_roles")
+      .upsert({ user_id: created.user.id, role: "admin" }, { onConflict: "user_id,role" });
+
+    return { adminId: created.user.id };
+  });
+
+/** Ensures the target user really is an administrator (never a shop or super admin). */
+async function assertTargetIsAdmin(admin: any, adminId: string) {
+  const { data } = await admin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", adminId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!data) throw new Error("Administrator not found");
+}
+
+/** Super admin: rename an administrator and/or reset their password. */
+export const updateAdminAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        adminId: z.string().uuid(),
+        fullName: z.string().min(1).optional(),
+        password: z.string().min(6).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const admin = await assertSuperAdminRole(context.userId);
+    await assertTargetIsAdmin(admin, data.adminId);
+
+    if (data.password) {
+      const { error } = await admin.auth.admin.updateUserById(data.adminId, { password: data.password });
+      if (error) throw new Error(error.message);
+    }
+    if (data.fullName) {
+      await admin.from("profiles").update({ full_name: data.fullName }).eq("id", data.adminId);
+    }
+    return { ok: true };
+  });
+
+/** Super admin: activate or deactivate an administrator login. */
+export const setAdminActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ adminId: z.string().uuid(), active: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const admin = await assertSuperAdminRole(context.userId);
+    if (data.adminId === context.userId) throw new Error("You cannot deactivate your own account");
+    await assertTargetIsAdmin(admin, data.adminId);
+
+    await admin.from("profiles").update({ active: data.active }).eq("id", data.adminId);
+    await admin.auth.admin.updateUserById(data.adminId, {
+      ban_duration: data.active ? "none" : "876000h",
+    });
+    return { ok: true };
+  });
+
+/** Super admin: permanently delete an administrator login. */
+export const deleteAdminAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ adminId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertSuperAdminRole(context.userId);
+    if (data.adminId === context.userId) throw new Error("You cannot delete your own account");
+    await assertTargetIsAdmin(admin, data.adminId);
+
+    await admin.auth.admin.deleteUser(data.adminId);
+    return { ok: true };
+  });
