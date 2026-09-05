@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OwnerLoginRouteImport } from './routes/owner-login'
 import { Route as SuperAdminLoginRouteImport } from './routes/super-admin-login'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminsRouteImport } from './routes/_authenticated/admins'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedCashiersRouteImport } from './routes/_authenticated/cashiers'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
@@ -50,6 +51,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminsRoute = AuthenticatedAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/owner-login': typeof OwnerLoginRoute
   '/super-admin-login': typeof SuperAdminLoginRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admins': typeof AuthenticatedAdminsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/cashiers': typeof AuthenticatedCashiersRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/owner-login': typeof OwnerLoginRoute
   '/super-admin-login': typeof SuperAdminLoginRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admins': typeof AuthenticatedAdminsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/cashiers': typeof AuthenticatedCashiersRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/owner-login': typeof OwnerLoginRoute
   '/super-admin-login': typeof SuperAdminLoginRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admins': typeof AuthenticatedAdminsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/cashiers': typeof AuthenticatedCashiersRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/owner-login'
     | '/super-admin-login'
     | '/admin'
+    | '/admins'
     | '/analytics'
     | '/cashiers'
     | '/inventory'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/owner-login'
     | '/super-admin-login'
     | '/admin'
+    | '/admins'
     | '/analytics'
     | '/cashiers'
     | '/inventory'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/owner-login'
     | '/super-admin-login'
     | '/_authenticated/admin'
+    | '/_authenticated/admins'
     | '/_authenticated/analytics'
     | '/_authenticated/cashiers'
     | '/_authenticated/inventory'
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admins': {
+      id: '/_authenticated/admins'
+      path: '/admins'
+      fullPath: '/admins'
+      preLoaderRoute: typeof AuthenticatedAdminsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -246,6 +265,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminsRoute: typeof AuthenticatedAdminsRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCashiersRoute: typeof AuthenticatedCashiersRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
@@ -255,6 +275,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminsRoute: AuthenticatedAdminsRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCashiersRoute: AuthenticatedCashiersRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
