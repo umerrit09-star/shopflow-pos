@@ -14,7 +14,6 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OwnerLoginRouteImport } from './routes/owner-login'
-import { Route as SuperAdminLoginRouteImport } from './routes/super-admin-login'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminsRouteImport } from './routes/_authenticated/admins'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -45,11 +44,6 @@ const AuthRoute = AuthRouteImport.update({
 const OwnerLoginRoute = OwnerLoginRouteImport.update({
   id: '/owner-login',
   path: '/owner-login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuperAdminLoginRoute = SuperAdminLoginRouteImport.update({
-  id: '/super-admin-login',
-  path: '/super-admin-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -93,7 +87,6 @@ export interface FileRoutesByFullPath {
   '/admin-login': typeof AdminLoginRoute
   '/auth': typeof AuthRoute
   '/owner-login': typeof OwnerLoginRoute
-  '/super-admin-login': typeof SuperAdminLoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/admins': typeof AuthenticatedAdminsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
@@ -107,7 +100,6 @@ export interface FileRoutesByTo {
   '/admin-login': typeof AdminLoginRoute
   '/auth': typeof AuthRoute
   '/owner-login': typeof OwnerLoginRoute
-  '/super-admin-login': typeof SuperAdminLoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/admins': typeof AuthenticatedAdminsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
@@ -123,7 +115,6 @@ export interface FileRoutesById {
   '/admin-login': typeof AdminLoginRoute
   '/auth': typeof AuthRoute
   '/owner-login': typeof OwnerLoginRoute
-  '/super-admin-login': typeof SuperAdminLoginRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/admins': typeof AuthenticatedAdminsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
@@ -139,7 +130,6 @@ export interface FileRouteTypes {
     | '/admin-login'
     | '/auth'
     | '/owner-login'
-    | '/super-admin-login'
     | '/admin'
     | '/admins'
     | '/analytics'
@@ -153,7 +143,6 @@ export interface FileRouteTypes {
     | '/admin-login'
     | '/auth'
     | '/owner-login'
-    | '/super-admin-login'
     | '/admin'
     | '/admins'
     | '/analytics'
@@ -168,7 +157,6 @@ export interface FileRouteTypes {
     | '/admin-login'
     | '/auth'
     | '/owner-login'
-    | '/super-admin-login'
     | '/_authenticated/admin'
     | '/_authenticated/admins'
     | '/_authenticated/analytics'
@@ -184,7 +172,6 @@ export interface RootRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   AuthRoute: typeof AuthRoute
   OwnerLoginRoute: typeof OwnerLoginRoute
-  SuperAdminLoginRoute: typeof SuperAdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -222,13 +209,6 @@ declare module '@tanstack/react-router' {
       path: '/owner-login'
       fullPath: '/owner-login'
       preLoaderRoute: typeof OwnerLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/super-admin-login': {
-      id: '/super-admin-login'
-      path: '/super-admin-login'
-      fullPath: '/super-admin-login'
-      preLoaderRoute: typeof SuperAdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -312,7 +292,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   AuthRoute: AuthRoute,
   OwnerLoginRoute: OwnerLoginRoute,
-  SuperAdminLoginRoute: SuperAdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
