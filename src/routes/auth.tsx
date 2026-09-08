@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { loginIdentifierToEmail } from "@/lib/username";
 import logoAsset from "@/assets/cloudcart-logo.jpg.asset.json";
 import { Button } from "@/components/ui/button";
@@ -51,18 +50,6 @@ function AuthPage() {
     void navigate({ to: "/pos", replace: true });
   }
 
-  async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error("Google sign-in failed");
-      return;
-    }
-    if (result.redirected) return;
-    void navigate({ to: "/pos", replace: true });
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-brand px-4 py-10">
       <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-6 shadow-lift">
@@ -103,12 +90,6 @@ function AuthPage() {
           </Button>
         </form>
 
-        <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" /> admin <span className="h-px flex-1 bg-border" />
-        </div>
-        <Button variant="outline" className="w-full" onClick={google}>
-          Continue with Google
-        </Button>
         <p className="mt-4 text-center text-xs text-muted-foreground">
           Need a shop account? Contact your CloudCart administrator.
         </p>
